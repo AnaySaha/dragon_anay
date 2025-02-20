@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 
@@ -20,13 +21,24 @@ const router = createBrowserRouter([
   children: [
     {
       index: true,
-        element: <Navigate to="category/01" />,
+        element: <Navigate to="category/01"/>,
       
     },
     {
       path: "/category/:id",
-      element: <CategoryNews></CategoryNews>,
-      loader: ({ params })=> fetch(`https://openapi.programming-hero.com/api/news/category/${params.id}`)
+      element: <CategoryNews />,
+      loader: async ({ params }) => {
+        try {
+          const response = await fetch(
+            `https://openapi.programming-hero.com/api/news/category/${params.id}`
+          );
+          if (!response.ok) throw new Error("Failed to fetch data");
+          return response.json();
+        } catch (error) {
+          console.error("API Fetch Error:", error);
+          return { data: [] }; // Prevent hydration error
+        }
+      },
     },
   ],
   },
@@ -48,7 +60,9 @@ const router = createBrowserRouter([
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-     <RouterProvider router={router} />
+<Suspense fallback={<h1>Loading...</h1>}>
+      <RouterProvider router={router} />
+    </Suspense>
      
   </StrictMode>,
-)
+);
